@@ -42,14 +42,14 @@ app.post("/create-account", async (req, res) => {
 
   await user.save();
 
-  const accesstoken = jwt.sign({ userId: user._id }, process.env.ACCESS_TOKEN, {
+  const accessToken = jwt.sign({ userId: user._id }, process.env.ACCESS_TOKEN, {
     expiresIn: "72h",
   });
 
   return res.status(200).json({
     error: "false",
     user: { fullname: user.fullname, email: user.email },
-    accesstoken,
+    accessToken,
     message: "Registration Completed",
   });
 });
@@ -69,14 +69,14 @@ app.post("/login", async (req, res) => {
   if (!isPassword) {
     return res.status(400).json({ message: "Credential Doesn't Match" });
   }
-  const accesstoken = jwt.sign({ userId: user._id }, process.env.ACCESS_TOKEN, {
+  const accessToken = jwt.sign({ userId: user._id }, process.env.ACCESS_TOKEN, {
     expiresIn: "72h",
   });
 
   return res.status(200).json({
     error: "false",
     user: { fullname: user.fullname, email: user.email },
-    accesstoken,
+    accessToken,
     message: "Login Successful",
   });
 });
