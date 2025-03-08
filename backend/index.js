@@ -97,15 +97,10 @@ app.get("/get-user", authentication, async (req, res) => {
 app.post("/add-travel-story", authentication, async (req, res) => {
   const { title, story, visitedLocation, imageUrl, visitedDate } = req.body;
   const { userId } = req.user;
+  console.log("Received data:", req.body);
+  console.log("User ID:", req.user?.userId);
 
-  if (
-    !title ||
-    !story ||
-    !visitedLocation ||
-    !imageUrl ||
-    !visitedDate ||
-    !userId
-  ) {
+  if (!title || !story || !visitedDate || !userId) {
     return res
       .status(400)
       .json({ error: true, message: "All Fields are Required" });
@@ -122,7 +117,9 @@ app.post("/add-travel-story", authentication, async (req, res) => {
       imageUrl,
       visitedDate: parsedDate,
     });
+
     await travelStory.save();
+    console.log("tob tobitto");
     return res
       .status(200)
       .json({ story: travelStory, message: "Story added successfully" });

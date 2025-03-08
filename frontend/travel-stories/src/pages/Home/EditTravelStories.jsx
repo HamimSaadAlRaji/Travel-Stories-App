@@ -4,6 +4,10 @@ import DateSelector from "../../components/DateSelector";
 import ImageSelector from "../../components/ImageSelector";
 import TagInputs from "../../components/TagInputs";
 import moment from "moment";
+import uploadImage from "../../utils/uploadImage";
+import { toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+import axiosInstance from "../../utils/axiosInstance";
 
 const EditTravelStories = ({ storyInfo, type, onClose, getAllStories }) => {
   const [title, setTitle] = useState(storyInfo?.title || "");
@@ -20,9 +24,10 @@ const EditTravelStories = ({ storyInfo, type, onClose, getAllStories }) => {
       let imageUrl = "";
       if (storyImg) {
         const ImgUploadRes = await uploadImage(storyImg);
-        imageUrl = ImgUploadRes.url;
+        console.log(ImgUploadRes.imageUrl);
+        imageUrl = ImgUploadRes.imageUrl || "";
       }
-      const response = await axiosInstance.post("/add-travel-stories", {
+      console.log({
         title,
         story,
         visitedLocation,
@@ -31,7 +36,20 @@ const EditTravelStories = ({ storyInfo, type, onClose, getAllStories }) => {
           ? moment(visitedDate).valueOf()
           : moment().valueOf(),
       });
-      if (response && response.data && response.data.story) {
+      const locationsArray = Array.isArray(visitedLocation)
+        ? visitedLocation
+        : [visitedLocation];
+      const response = await axiosInstance.post("/add-travel-story", {
+        title,
+        story,
+        visitedLocation: locationsArray,
+        imageUrl,
+        visitedDate: visitedDate
+          ? moment(visitedDate).valueOf()
+          : moment().valueOf(),
+      });
+
+      if (response.data && response.data.story) {
         toast.success("Story Added Successfully");
         getAllStories();
         onClose();
@@ -81,10 +99,10 @@ const EditTravelStories = ({ storyInfo, type, onClose, getAllStories }) => {
     }
     setError("");
 
-    if (type === "add") {
-      addNewStory();
-    } else {
+    if (type === "edit") {
       updateStory();
+    } else {
+      addNewStory();
     }
   };
 
