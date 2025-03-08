@@ -91,7 +91,6 @@ app.get("/get-user", authentication, async (req, res) => {
 
   return res.json({
     user: Isuser,
-    message: `Welcome Home ${Isuser.fullname}`,
   });
 });
 
@@ -204,18 +203,22 @@ app.delete("/delete-travel-story/:id", authentication, async (req, res) => {
 app.put("/update-isfavourite/:id", authentication, async (req, res) => {
   const { id } = req.params;
   const { userId } = req.user;
-  const isFavourite = req.body;
+  const { isFavourite } = req.body; // Extract the field from the request body
   try {
     const travelStory = await TravelStory.findOne({ _id: id, userId: userId });
     if (!travelStory) {
-      res.status(400).json({ error: true, message: "No Story Found" });
+      return res.status(400).json({ error: true, message: "No Story Found" });
     }
 
-    travelStory.isFavourite = isFavourite;
+    // Ensure that isFavourite is explicitly cast to a boolean
+    travelStory.isFavourite = Boolean(isFavourite);
+    await travelStory.save();
 
-    return res.status(400).json({ message: "Favourite Updated Successfully" });
+    return res
+      .status(200) // Fixed status code
+      .json({ story: travelStory, message: "Favourite Updated Successfully" });
   } catch (err) {
-    res.status(200).json({ error: true, message: err.message });
+    res.status(500).json({ error: true, message: err.message }); // Fixed status code
   }
 });
 
