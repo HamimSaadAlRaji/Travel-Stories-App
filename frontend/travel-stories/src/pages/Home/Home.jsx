@@ -32,9 +32,9 @@ const Home = () => {
       }
     }
   };
-  const getAllStories = async () => {
+  const getAllUserStories = async () => {
     try {
-      const response = await axiosInstance.get("/get-travel-stories");
+      const response = await axiosInstance.get("/get-all-travel-stories");
       if (response.data && response.data.stories) {
         setAllStories(response.data.stories.travelStory);
       }
@@ -53,16 +53,19 @@ const Home = () => {
       );
       if (response.data && response.data.story) {
         toast.success("Updated Favourites");
-        getAllStories();
+        getAllUserStories();
       }
     } catch (error) {
       console.log("lol bro how are you");
     }
   };
+  const handleViewStory = (id) => {
+    navigate(`/story/${id}`);
+  };
 
   useEffect(() => {
     getUserInfo();
-    getAllStories();
+    getAllUserStories();
     console.log(allStories.length);
     return () => {};
   }, []);
@@ -90,7 +93,7 @@ const Home = () => {
                         handleEdit();
                       }}
                       onClick={() => {
-                        handleViewStory();
+                        handleViewStory(items._id);
                       }}
                       onFavouriteClick={() => {
                         updateIsFavourite(items);
@@ -124,7 +127,7 @@ const Home = () => {
           onClose={() => {
             setOpenAddEditModal({ isShown: false, type: "add", data: null });
           }}
-          getAllStories={getAllStories}
+          getAllUserStories={getAllUserStories}
         />
       </Modal>
 

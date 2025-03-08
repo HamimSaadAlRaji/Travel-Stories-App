@@ -9,7 +9,7 @@ import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import axiosInstance from "../../utils/axiosInstance";
 
-const EditTravelStories = ({ storyInfo, type, onClose, getAllStories }) => {
+const EditTravelStories = ({ storyInfo, type, onClose, getAllUserStories }) => {
   const [title, setTitle] = useState(storyInfo?.title || "");
   const [storyImg, setStoryImg] = useState(null);
   const [story, setStory] = useState(storyInfo?.story || "");
@@ -51,7 +51,7 @@ const EditTravelStories = ({ storyInfo, type, onClose, getAllStories }) => {
 
       if (response.data && response.data.story) {
         toast.success("Story Added Successfully");
-        getAllStories();
+        getAllUserStories();
         onClose();
       }
     } catch (err) {
@@ -79,7 +79,7 @@ const EditTravelStories = ({ storyInfo, type, onClose, getAllStories }) => {
       );
       if (response && response.data && response.data.updatedStory) {
         toast.success("Story Updated Successfully");
-        getAllStories();
+        getAllUserStories();
         onClose();
       }
     } catch (err) {

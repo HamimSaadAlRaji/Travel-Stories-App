@@ -139,6 +139,16 @@ app.get("/get-travel-stories", authentication, async (req, res) => {
     return res.status(400).json({ error: true, message: error.message });
   }
 });
+
+app.get("/get-all-travel-stories", async (req, res) => {
+  try {
+    const travelStory = await TravelStory.find();
+    res.status(200).json({ stories: { travelStory } });
+  } catch (error) {
+    return res.status(400).json({ error: true, message: error.message });
+  }
+});
+
 app.post("/edit-travel-stories/:id", authentication, async (req, res) => {
   const { id } = req.params;
   const { title, story, visitedLocation, imageUrl, visitedDate } = req.body;
