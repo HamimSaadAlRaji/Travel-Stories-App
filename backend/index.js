@@ -149,10 +149,11 @@ app.get("/get-all-travel-stories", async (req, res) => {
   }
 });
 
-app.post("/edit-travel-stories/:id", authentication, async (req, res) => {
+app.put("/edit-travel-stories/:id", authentication, async (req, res) => {
   const { id } = req.params;
   const { title, story, visitedLocation, imageUrl, visitedDate } = req.body;
   const { userId } = req.user;
+
   if (
     !title ||
     !story ||
@@ -165,10 +166,15 @@ app.post("/edit-travel-stories/:id", authentication, async (req, res) => {
       .status(400)
       .json({ error: true, message: "All Fields are Required" });
   }
+
   const parsedDate = new Date(parseInt(visitedDate));
 
   try {
-    const travelStory = await TravelStory.findOne({ _id: id, userId: userId });
+    const travelStory = await TravelStory.findOne({ _id: id, userId });
+
+    if (!travelStory) {
+      return res.status(404).json({ error: true, message: "Story not found" });
+    }
 
     const placeholderImgUrl = "http://localhost:8000/assets/placeholder.png";
 
@@ -178,14 +184,15 @@ app.post("/edit-travel-stories/:id", authentication, async (req, res) => {
     travelStory.imageUrl = imageUrl || placeholderImgUrl;
     travelStory.visitedDate = parsedDate;
 
-    travelStory.save();
+    await travelStory.save();
     res
       .status(200)
-      .json({ story: TravelStory, message: "Updated Successfully" });
+      .json({ story: travelStory, message: "Updated Successfully" });
   } catch (err) {
-    res.status(200).json({ error: true, message: err.message });
+    res.status(500).json({ error: true, message: err.message });
   }
 });
+
 app.delete("/delete-travel-story/:id", authentication, async (req, res) => {
   const { id } = req.params;
   const { userId } = req.user;

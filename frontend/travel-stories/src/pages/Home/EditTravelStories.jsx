@@ -8,10 +8,12 @@ import uploadImage from "../../utils/uploadImage";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import axiosInstance from "../../utils/axiosInstance";
+import { useNavigate } from "react-router-dom";
 
 const EditTravelStories = ({ storyInfo, type, onClose, getAllUserStories }) => {
+  const navigate = useNavigate();
   const [title, setTitle] = useState(storyInfo?.title || "");
-  const [storyImg, setStoryImg] = useState(null);
+  const [storyImg, setStoryImg] = useState(storyInfo?.imageUrl || "");
   const [story, setStory] = useState(storyInfo?.story || "");
   const [visitedLocation, setVisitedLocation] = useState(
     storyInfo?.visitedLocation || []
@@ -51,7 +53,6 @@ const EditTravelStories = ({ storyInfo, type, onClose, getAllUserStories }) => {
 
       if (response.data && response.data.story) {
         toast.success("Story Added Successfully");
-        getAllUserStories();
         onClose();
       }
     } catch (err) {
@@ -63,27 +64,50 @@ const EditTravelStories = ({ storyInfo, type, onClose, getAllUserStories }) => {
   const updateStory = async () => {
     try {
       let imageUrl = storyInfo?.imageUrl || "";
-      if (storyImg) {
-        const ImgUploadRes = await uploadImage(storyImg);
-        imageUrl = ImgUploadRes.url;
+      if (storyImg instanceof File) {
+        try {
+          console.log("Uploading image:", storyImg);
+          const ImgUploadRes = await uploadImage(storyImg);
+          imageUrl = ImgUploadRes.imageUrl || "";
+        } catch (err) {
+          console.error("Image upload failed:", err);
+          toast.error("Image upload failed. Please try again.");
+          return;
+        }
       }
+
+      const locationsArray = Array.isArray(visitedLocation)
+        ? visitedLocation
+        : [visitedLocation];
+
+      console.log("Updated Data:", {
+        title,
+        story,
+        visitedLocation: locationsArray,
+        imageUrl,
+        visitedDate: moment(visitedDate).valueOf(),
+      });
+
       const response = await axiosInstance.put(
-        `/update-travel-story/${storyInfo.id}`,
+        `/edit-travel-stories/${storyInfo._id}`,
         {
           title,
           story,
-          visitedLocation,
+          visitedLocation: locationsArray,
           imageUrl,
-          visitedDate: moment(visitedDate).valueOf(),
+          visitedDate: visitedDate
+            ? moment(visitedDate).valueOf()
+            : moment().valueOf(),
         }
       );
-      if (response && response.data && response.data.updatedStory) {
+
+      if (response.data && response.data.story) {
         toast.success("Story Updated Successfully");
-        getAllUserStories();
+        navigate(0);
         onClose();
       }
     } catch (err) {
-      console.error(err);
+      console.error("Error updating story:", err.response || err.message);
       toast.error("Failed to update story");
     }
   };

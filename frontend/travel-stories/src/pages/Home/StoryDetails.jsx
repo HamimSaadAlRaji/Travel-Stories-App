@@ -1,13 +1,19 @@
 import React, { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import axiosInstance from "../../utils/axiosInstance";
+import Modal from "react-modal";
+import EditTravelStories from "./EditTravelStories";
 
 const StoryDetails = () => {
   const { id } = useParams(); // Get the story ID from the URL
   const [story, setStory] = useState(null); // State to store the story
   const [loading, setLoading] = useState(true); // State to handle loading
-  const [isEditing, setIsEditing] = useState(false); // State for editing
-  const [editData, setEditData] = useState({}); // State for edit inputs
+  const [editData, z] = useState({}); // State for edit inputs
+  const [openAddEditModal, setOpenAddEditModal] = useState({
+    isShown: false,
+    type: "add",
+    data: null,
+  });
 
   useEffect(() => {
     const getStory = async () => {
@@ -16,8 +22,8 @@ const StoryDetails = () => {
         const foundStory = response.data.stories.travelStory.find(
           (prod) => prod._id === id
         );
-        setStory(foundStory); // Update state with the fetched story
-        setEditData(foundStory); // Initialize edit data
+        setStory(foundStory);
+        setOpenAddEditModal({ isShown: false, type: "edit", data: null }); // Update state with the fetched story // Initialize edit data
       } catch (error) {
         console.error("Error fetching story:", error);
       } finally {
@@ -28,16 +34,11 @@ const StoryDetails = () => {
     getStory();
   }, [id]); // Run the effect whenever the `id` changes
 
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setEditData({ ...editData, [name]: value });
-  };
-
   const saveEditedStory = async () => {
     try {
-      await axiosInstance.put(`/update-story/${id}`, editData); // Update API call
+      await axiosInstance.put(`/edit-travel-stories/${id}`, editData); // Update API call
       setStory(editData); // Update story state
-      setIsEditing(false); // Close editing mode
+
       alert("Story updated successfully!");
     } catch (error) {
       console.error("Error updating story:", error);
@@ -106,56 +107,40 @@ const StoryDetails = () => {
             {/* Action Buttons */}
             <button
               className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-all"
-              onClick={() => setIsEditing(true)}
+              onClick={() => {
+                setOpenAddEditModal({
+                  isShown: true,
+                  type: "edit",
+                  data: story,
+                });
+              }}
             >
               Edit Story
             </button>
           </div>
         </div>
       </div>
-
-      {/* Edit Modal */}
-      {isEditing && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-lg">
-            <h2 className="text-xl font-bold mb-4">Edit Story</h2>
-            <div className="mb-4">
-              <label className="block text-gray-700">Title</label>
-              <input
-                type="text"
-                name="title"
-                value={editData.title || ""}
-                onChange={handleInputChange}
-                className="w-full border rounded-lg p-2 mt-1"
-              />
-            </div>
-            <div className="mb-4">
-              <label className="block text-gray-700">Story</label>
-              <textarea
-                name="story"
-                value={editData.story || ""}
-                onChange={handleInputChange}
-                className="w-full border rounded-lg p-2 mt-1"
-                rows="4"
-              />
-            </div>
-            <div className="flex items-center justify-between">
-              <button
-                className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-all"
-                onClick={saveEditedStory}
-              >
-                Save
-              </button>
-              <button
-                className="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition-all"
-                onClick={() => setIsEditing(false)}
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <Modal
+        isOpen={openAddEditModal.isShown}
+        onRequestClose={() => {}}
+        style={{
+          overlay: {
+            backgroundColor: "rgba(0,0,0,0.2)",
+            zIndex: 999,
+          },
+        }}
+        appElement={document.getElementById("root")}
+        className="modal-box"
+      >
+        <EditTravelStories
+          type={openAddEditModal.type}
+          storyInfo={openAddEditModal.data}
+          onClose={() => {
+            setOpenAddEditModal({ isShown: false, type: "edit", data: null });
+          }}
+          getAllUserStories={saveEditedStory}
+        />
+      </Modal>
     </div>
   );
 };
