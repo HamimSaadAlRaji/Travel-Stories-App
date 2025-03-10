@@ -12,6 +12,7 @@ const Upload = require("./multer");
 const fs = require("fs");
 const path = require("path");
 const { authentication } = require("./utilities");
+const Comment = require("./models/commentModel");
 
 mongoose.connect(config.connectionString);
 
@@ -274,6 +275,71 @@ app.get("/travel-stories/filter", authentication, async (req, res) => {
     res.status(200).json({ error: true, message: err.message });
   }
 });
+// Get comments for a story
+app.get("/stories/:storyId/comments", async (req, res) => {
+  try {
+    const comments = await Comment.find({
+      storyId: req.params.storyId,
+    }).populate("user");
+    res.json({ comments });
+  } catch (err) {
+    res.status(500).json({ error: "Failed to fetch comments" });
+  }
+});
+
+// Add a comment
+app.post("/stories/:storyId/comments", authentication, async (req, res) => {
+  const userId = req.user.userId; // Access the userId from the decoded token
+  console.log(userId);
+  const Isuser = await User.findById(userId);
+  try {
+    console.log(req.body.content);
+    console.log(Isuser);
+    console.log(req.params.storyId);
+
+    const newComment = await Comment.create({
+      storyId: req.params.storyId,
+      user: Isuser,
+      content: req.body.content,
+    });
+    await newComment.save();
+    res.json({ comment: newComment });
+  } catch (err) {
+    res.status(500).json({ error: "Failed to add comment" });
+  }
+});
+
+// Like a comment
+app.post(
+  "/stories/:storyId/comments/:commentId/like",
+  authentication,
+  async (req, res) => {
+    try {
+      const comment = await Comment.findById(req.params.commentId);
+      comment.likes += 1;
+      await comment.save();
+      res.json({ likes: comment.likes });
+    } catch (err) {
+      res.status(500).json({ error: "Failed to like comment" });
+    }
+  }
+);
+
+// Reply to a comment
+app.post(
+  "/stories/:storyId/comments/:commentId/reply",
+  authentication,
+  async (req, res) => {
+    try {
+      const comment = await Comment.findById(req.params.commentId);
+      comment.replies.push({ user: req.user.id, content: req.body.content });
+      await comment.save();
+      res.json({ reply: comment.replies[comment.replies.length - 1] });
+    } catch (err) {
+      res.status(500).json({ error: "Failed to add reply" });
+    }
+  }
+);
 
 app.post("/add-image", Upload.single("image"), async (req, res) => {
   try {

@@ -3,6 +3,7 @@ import { useParams } from "react-router-dom";
 import axiosInstance from "../../utils/axiosInstance";
 import Modal from "react-modal";
 import EditTravelStories from "./EditTravelStories";
+import CommentSection from "../../components/CommentSection";
 
 const StoryDetails = () => {
   const { id } = useParams(); // Get the story ID from the URL
@@ -141,6 +142,7 @@ const StoryDetails = () => {
           getAllUserStories={saveEditedStory}
         />
       </Modal>
+      <CommentSection storyId={story._id} />
     </div>
   );
 };
