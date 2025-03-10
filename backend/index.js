@@ -331,16 +331,47 @@ app.post(
   authentication,
   async (req, res) => {
     try {
+      const userId = req.user.userId; // Use userId from decoded token
+      const user = await User.findById(userId);
+
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+
       const comment = await Comment.findById(req.params.commentId);
-      comment.replies.push({ user: req.user.id, content: req.body.content });
+      if (!comment) {
+        return res.status(404).json({ error: "Comment not found" });
+      }
+
+      // Add the reply with proper user reference
+      comment.replies.push({
+        user: userId,
+        content: req.body.content,
+      });
+
       await comment.save();
-      res.json({ reply: comment.replies[comment.replies.length - 1] });
+
+      // Get the newly added reply and return with user info
+      const newReply = comment.replies[comment.replies.length - 1];
+
+      // Create a response object with user info included
+      const replyResponse = {
+        _id: newReply._id,
+        user: {
+          _id: user._id,
+          fullname: user.fullname,
+        },
+        content: newReply.content,
+        createdAt: newReply.createdAt,
+      };
+
+      res.json({ reply: replyResponse });
     } catch (err) {
+      console.error("Error adding reply:", err);
       res.status(500).json({ error: "Failed to add reply" });
     }
   }
 );
-
 app.post("/add-image", Upload.single("image"), async (req, res) => {
   try {
     if (!req.file) {

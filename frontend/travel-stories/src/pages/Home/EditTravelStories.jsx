@@ -54,6 +54,7 @@ const EditTravelStories = ({ storyInfo, type, onClose, getAllUserStories }) => {
       if (response.data && response.data.story) {
         toast.success("Story Added Successfully");
         onClose();
+        navigate(0);
       }
     } catch (err) {
       console.error(err);

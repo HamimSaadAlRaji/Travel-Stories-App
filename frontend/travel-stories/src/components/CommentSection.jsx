@@ -4,8 +4,10 @@ import axiosInstance from "../utils/axiosInstance";
 const CommentSection = ({ storyId }) => {
   const [comments, setComments] = useState([]);
   const [newComment, setNewComment] = useState("");
-  const [reply, setReply] = useState({});
+  const [likedComments, setLikedComments] = useState([]);
+  const [replyText, setReplyText] = useState({});
   const [loading, setLoading] = useState(false);
+  const [replyLoading, setReplyLoading] = useState({});
 
   useEffect(() => {
     const fetchComments = async () => {
@@ -45,9 +47,13 @@ const CommentSection = ({ storyId }) => {
 
   const handleLikeComment = async (commentId) => {
     try {
+      // Prevent multiple likes
+      if (likedComments.includes(commentId)) return;
+
       const response = await axiosInstance.post(
         `/stories/${storyId}/comments/${commentId}/like`
       );
+
       setComments((prev) =>
         prev.map((comment) =>
           comment._id === commentId
@@ -55,31 +61,45 @@ const CommentSection = ({ storyId }) => {
             : comment
         )
       );
+
+      // Track liked comments to prevent multiple likes
+      setLikedComments([...likedComments, commentId]);
     } catch (err) {
       console.error("Error liking comment:", err);
     }
   };
 
-  const handleAddReply = async (commentId, content) => {
-    if (!content.trim()) return;
+  const handleAddReply = async (commentId) => {
+    const content = replyText[commentId];
+    if (!content || !content.trim()) return;
+
     try {
-      setLoading(true);
+      // Set loading state for this specific reply
+      setReplyLoading((prev) => ({ ...prev, [commentId]: true }));
+
       const response = await axiosInstance.post(
         `/stories/${storyId}/comments/${commentId}/reply`,
         { content }
       );
+
+      // Find the comment and add the reply
       setComments((prev) =>
         prev.map((comment) =>
           comment._id === commentId
-            ? { ...comment, replies: [...comment.replies, response.data.reply] }
+            ? {
+                ...comment,
+                replies: [...comment.replies, response.data.reply],
+              }
             : comment
         )
       );
-      setReply({ ...reply, [commentId]: "" });
+
+      // Clear the reply input
+      setReplyText((prev) => ({ ...prev, [commentId]: "" }));
     } catch (err) {
       console.error("Error adding reply:", err);
     } finally {
-      setLoading(false);
+      setReplyLoading((prev) => ({ ...prev, [commentId]: false }));
     }
   };
 
@@ -101,45 +121,73 @@ const CommentSection = ({ storyId }) => {
           {loading ? "Posting..." : "Post Comment"}
         </button>
       </div>
-      {comments.map((comment) => (
-        <div key={comment._id} className="mb-4 border-b pb-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="font-bold">{comment.user.name}</p>
-              <p className="text-gray-600">{comment.content}</p>
-            </div>
-            <button
-              onClick={() => handleLikeComment(comment._id)}
-              className="text-blue-500"
-            >
-              👍 {comment.likes}
-            </button>
-          </div>
-          <div className="ml-4 mt-2">
-            {comment.replies.map((reply) => (
-              <div key={reply._id} className="ml-4">
-                <p>
-                  <strong>{reply.user.name}:</strong> {reply.content}
+      {comments.length > 0 ? (
+        comments.map((comment) => (
+          <div key={comment._id} className="mb-4 border-b pb-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="underline text-blue-400 text-xl">
+                  {comment.user?.fullname || "User"}
                 </p>
+                <p className="text-gray-600">{comment.content}</p>
               </div>
-            ))}
-            <textarea
-              className="w-full p-2 border rounded mt-2"
-              placeholder="Reply..."
-              value={reply[comment._id] || ""}
-              onChange={(e) =>
-                setReply({ ...reply, [comment._id]: e.target.value })
-              }
-            />
-            <button
-              onClick={() => handleAddReply(comment._id, reply[comment._id])}
-              className="bg-gray-300 text-sm px-3 py-1 mt-2 rounded hover:bg-gray-400"
-            >
-              Reply
-            </button>
+              <button
+                onClick={() => handleLikeComment(comment._id)}
+                className={`${
+                  likedComments.includes(comment._id)
+                    ? "text-blue-700"
+                    : "text-blue-500"
+                }`}
+              >
+                👍 {comment.likes}
+              </button>
+            </div>
+            <div className="ml-4 mt-2">
+              {comment.replies && comment.replies.length > 0 && (
+                <div className="bg-gray-50 p-2 rounded mb-2">
+                  {comment.replies.map((reply, index) => (
+                    <div
+                      key={reply._id || index}
+                      className="mb-2 border-b border-gray-200 pb-2 last:border-0"
+                    >
+                      <p>
+                        <strong className="text-red-300 text-xl underline pr-1">
+                          {reply.user?.fullname || "User"}:
+                        </strong>{" "}
+                        {reply.content}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              )}
+              <div className="flex items-center mt-2">
+                <textarea
+                  className="flex-grow p-2 border rounded"
+                  placeholder="Reply to this comment..."
+                  value={replyText[comment._id] || ""}
+                  onChange={(e) =>
+                    setReplyText({
+                      ...replyText,
+                      [comment._id]: e.target.value,
+                    })
+                  }
+                />
+                <button
+                  onClick={() => handleAddReply(comment._id)}
+                  className="bg-gray-300 text-sm px-3 py-1 ml-2 rounded hover:bg-gray-400"
+                  disabled={replyLoading[comment._id]}
+                >
+                  {replyLoading[comment._id] ? "..." : "Reply"}
+                </button>
+              </div>
+            </div>
           </div>
-        </div>
-      ))}
+        ))
+      ) : (
+        <p className="text-gray-500">
+          No comments yet. Be the first to comment!
+        </p>
+      )}
     </div>
   );
 };
